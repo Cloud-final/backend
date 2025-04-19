@@ -1,7 +1,7 @@
 {
-  "name": "monkeytype-server",
+  "name": "oiiatype-server",
   "version": "1.0.0",
-  "description": "API server for MonkeyType game using AWS S3 for song data",
+  "description": "API server for OiiaType game using AWS S3 for song data",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.782.0",
+    "@aws-sdk/client-secrets-manager": "^3.787.0",
     "@aws-sdk/lib-storage": "^3.782.0",
     "@aws-sdk/s3-request-presigner": "^3.782.0",
     "cors": "^2.8.5",
