@@ -17,13 +17,13 @@ const app = express();
 const PORT = 3001;
 
 // Middleware
-app.use(express.json());
-app.use(cors());
+const corsOptions = {
+  origin: '*',
+  optionsSuccessStatus: 200,
+};
 
-var corsOptions = {
-    origin: '*',
-    optionsSuccessStatus: 200
-}
+app.use(cors(corsOptions));
+app.use(express.json());
 
 async function getSecret() {
   const secret_name = "ecs/cloud-final/oiiatype-s3";
