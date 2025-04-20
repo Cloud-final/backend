@@ -45,54 +45,61 @@ async function getSecret() {
 }
 
 async function getSongData(level, id) {
+  const secret = await getSecret();
+  const client = new S3Client({ region: secret.region });
+  const songKey = `${level}/${id}/song.json`;
+  const trackKey = `${level}/${id}/track.mp3`;
+
   try {
-    const client = new S3Client({ region: secret.region });
+    console.log(`Fetching song data: ${songKey}`);
     const response = await client.send(
       new GetObjectCommand({
         Bucket: secret.S3_BUCKET_NAME,
-        Key: `${level}/${id}/song.json`
+        Key: songKey
       }));
 
     const str = await response.Body.transformToString();
-    const songObj = JSON.parse(str)
-    
+    const songObj = JSON.parse(str);
+
     const trackUrl = await getSignedUrl(
-      client, 
+      client,
       new GetObjectCommand({
         Bucket: secret.S3_BUCKET_NAME,
-        Key: `${level}/${id}/track.mp3`
-      }), 
-      { 
-        expiresIn: 3600 
-      });
-    
+        Key: trackKey
+      }),
+      { expiresIn: 3600 }
+    );
+
+    console.log(`Successfully retrieved song and generated track URL for: ${level}/${id}`);
+
     return {
       name    : songObj.metadata.name,
       duration: songObj.metadata.duration,
       track   : trackUrl,
       lyrics  : songObj.lyrics
     };
-    } catch (error) {
-    console.error('Error retrieving song data:', error);
-    throw error;
-    }
+  } catch (error) {
+    console.log(`Error retrieving song data for ${level}/${id}:`, error.name);
+    throw new Error('NoSuchKey');
+  }
 }
+
 
 app.get('/:level/:id', async (req, res) => {
   const { level, id } = req.params;
-  
-  console.log('There is an incoming request.')
+  console.log(`------------------------------------------`);
+  console.log(`Incoming GET request for /${level}/${id}`);
 
   if (!['simple', 'medium', 'hard'].includes(level)) {
+    console.log(`Invalid level received: ${level}`);
     return res.status(400).json({ error: 'Invalid level. Must be simple, medium, or hard.' });
   }
-  
+
   try {
     const songData = await getSongData(level, id);
-    res.status(200).json({ status: 'ok', body: songData })
+    res.status(200).json({ status: 'ok', body: songData });
   } catch (error) {
-    console.log(error);
-    if (error.code === 'NoSuchKey') {
+    if (error.message === 'NoSuchKey') {
       res.status(404).json({ error: 'Song not found' });
     } else {
       res.status(500).json({ error: 'Internal server error' });
@@ -105,9 +112,8 @@ app.get('/', (req, res) => {
 });
 
 // Start server
-const secret = await getSecret();
-app.listen(secret.PORT, () => {
-  console.log(`Server running on port ${secret.PORT}`);
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
 
 module.exports = app;
